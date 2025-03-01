@@ -26,7 +26,7 @@ class HeaderInjector:
         if self.origin:
             flow.request.headers["Origin"] = self.origin
 
-        if flow.request.url.startswith("http://192.168.1.25:8080/"):
+        if flow.request.url.startswith("http://192.168.1.123:8080/"):
             flow.request.url = flow.request.url.replace("http://192.168.1.123:8080/", "")
 
 addons = [HeaderInjector()]
