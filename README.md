@@ -3,7 +3,7 @@ Play Widevine &amp; Clearkey DRM streams In Your Web Browser <br>
 This is for educational purposes only - Do not play streams you do not have to right to play. You need to provide any decrypt keys or license URLS for this to work. This application does not extract/generate or provide any such keys
 <br>
 ## Limitations
-1. You need to load the html directly into your web browser. It will not work hosted on a server for example
+1. You need to load the html file directly into your web browser. It will not work hosted on a server for example
 2. It will not work in Chrome and I've only tested in Firefox
 
 ## How To Load
