@@ -235,7 +235,7 @@
         });
         console.log('Parsed ClearKeys:', clearKeys);
 
-        const proxyMpdUrl = `https://192.168.123.25:5098/proxy?url=${encodeURIComponent(mpdUrl)}`;
+        const proxyMpdUrl = `https://192.168.1.123:5098/proxy?url=${encodeURIComponent(mpdUrl)}`;
         console.log('Loading MPD from:', proxyMpdUrl);
 
         videoModal.style.display = 'flex';
