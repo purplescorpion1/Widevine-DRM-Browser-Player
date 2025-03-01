@@ -35,6 +35,13 @@ Open ```Widevine-DRM-Browser-Player/drm_player_server.py``` in a coding text edi
 Change the IP in the following line to the IP address of the machine running the script <br>
 ```app.run(host='192.168.1.123', port=5098, debug=True, ssl_context=('cert.pem', 'key.pem'))``` <br>
 <br>
+Open ```Widevine-DRM-Browser-Player/drm_player_mitmproxy.py``` in a coding text editor eg notpad++ <br>
+Change the IP in the following line to the IP address of the machine running the script <br>
+```
+if flow.request.url.startswith("http://192.168.1.123:8080/"):
+            flow.request.url = flow.request.url.replace("http://192.168.1.123:8080/", "")
+``` 
+<br>
 python if on windows 11 <br>
 python3 if on linux <br>
 <br>
