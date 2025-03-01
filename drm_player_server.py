@@ -29,14 +29,22 @@ def proxy():
     if not url:
         return "URL parameter is required", 400
 
+    # Minimal headers for Widevine compatibility
     headers = {
-        'User-Agent': request.headers.get('User-Agent', 'Mozilla/5.0'),
+        'User-Agent': request.headers.get('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'),
     }
     if proxy_config.get('referer'):
         headers['Referer'] = proxy_config['referer']
     if proxy_config.get('origin'):
         headers['Origin'] = proxy_config['origin']
 
+    # Add extra headers only for specific URLs (e.g., ClearKey)
+    if 'webtvstream.bhtelecom.ba' in url:
+        headers.update(dict(request.headers))  # Pass all client headers
+        headers['Accept'] = 'application/dash+xml, */*'
+        headers['X-Requested-With'] = 'XMLHttpRequest'
+
+    app.logger.debug(f"Sending request to {url} with headers: {headers}")
     try:
         response = requests.get(url, headers=headers, stream=True, verify=False)
         response.raise_for_status()
@@ -68,4 +76,4 @@ def proxy():
         return "Invalid MPD XML", 500
 
 if __name__ == '__main__':
-    app.run(host='192.168.1.123', port=5098, debug=True, ssl_context=('cert.pem', 'key.pem'))
+    app.run(host='192.168.1.25', port=5098, debug=True, ssl_context=('cert.pem', 'key.pem'))
