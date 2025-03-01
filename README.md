@@ -18,6 +18,10 @@ Enter license url or decryption key <br>
 ## How To Setup And Load If Running On A Server
 Clone this repo ```git clone https://github.com/purplescorpion1/Widevine-DRM-Browser-Player```  <br>
 <br>
+Requires python eg Windows install from ```https://www.python.org/downloads/windows/``` <br>
+Requires the following python modules to be installed <br>
+```pip install flask requests mitmproxy``` <br>
+<br>
 Download and install OpenSSL Binaries <br>
 Windows https://slproweb.com/products/Win32OpenSSL.html <br>
 Linux/Mac sudo ```apt install openssl``` / ```brew install openssl``` <br>
