@@ -4,7 +4,7 @@ This is for educational purposes only - Do not play streams you do not have to r
 <br>
 
 ## Options And Limitations
-If you just want to test locally load drm_player.html straight into Firefox web browser (it will not work in Chrome)
+If you just want to test locally load drm_player.html straight into Firefox web browser (it will not work in Chrome) <br>
 But if you want to host the html file and play in any web browser including Chrome, you will need to use the proxy server. I've included a host server and proxy server as examples
 
 ## How To Load local drm_player.htm
