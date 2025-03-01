@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Widevine ClearKey Player</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shaka-player@4.10.6/dist/controls.css">
+    <script type="text/javascript" src="https://ff.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=aYCR8TnjQCPN_biXdYuoUoeurEcgG-sXGumFi_Bzmp49Vz13x5Cu-09m6H2x784AGwZPFQ8Huri9gwk4mT53lqtXO3_JvjPe8GJzLkAO1d7tyJngMtWdVZ70jVGN-oLYFhBAG6nM79EFRW9IAs4-0ONkFY4LuuuooCXJPPRTmgIUN8FNSCkGA51yP64yErGGsSMLygFoIg1aOmw8i8MTiMd6mKh9-chsSEZFpJE5Xz8BlcgUZgQ7Ig1Kzr2QY_FwraJ4zdS7hY2X_gSrcscZfw" charset="UTF-8"></script><style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #000000;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background-color: #1a1a1a;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+        }
+        h2 { color: #4caf50; margin-bottom: 20px; }
+        input[type="text"], textarea, select, input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            margin: 12px 0;
+            border: 1px solid #444;
+            border-radius: 8px;
+            font-size: 14px;
+            background-color: #333;
+            color: #ffffff;
+            transition: background-color 0.3s;
+        }
+        input[type="text"]:focus, textarea:focus, select:focus, input[type="file"]:focus {
+            background-color: #444;
+            border-color: #4caf50;
+            outline: none;
+        }
+        button {
+            padding: 12px 24px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            margin: 5px;
+        }
+        button:hover { background-color: #43a047; }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.9);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #1a1a1a;
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 90%;
+            margin: auto;
+        }
+        video { width: 100%; height: auto; border-radius: 8px; outline: none; }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
+        .close:hover, .close:focus { color: #ffffff; text-decoration: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Widevine ClearKey Player</h2>
+
+    <label for="loadFile">Load Saved Streams:</label>
+    <input type="file" id="loadFile" accept=".json">
+
+    <label for="savedStreams">Saved Streams:</label>
+    <select id="savedStreams">
+        <option value="">-- Select a Saved Stream --</option>
+    </select>
+
+    <label for="mpdUrl">MPD URL:</label>
+    <input type="text" id="mpdUrl" placeholder="https://example.com/manifest.mpd">
+
+    <label for="clearKeys">ClearKeys (KID:KEY):</label>
+    <textarea id="clearKeys" rows="3" placeholder="00000000000000000000000000000000:00000000000000000000000000000000"></textarea>
+
+    <label for="licenseUrl">Widevine License URL:</label>
+    <input type="text" id="licenseUrl" placeholder="https://example.com/license">
+
+    <button id="loadPlayer">Play</button>
+    <button id="saveStream">Save Stream</button>
+    <button id="deleteStream">Delete Selected Stream</button>
+</div>
+
+<div id="videoModal" class="modal">
+    <div class="modal-content">
+        <span class="close" id="closeModal">×</span>
+        <video id="videoPlayer" controls></video>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.10.6/shaka-player.compiled.js"></script>
+<script>
+    const loadPlayerButton = document.getElementById('loadPlayer');
+    const saveStreamButton = document.getElementById('saveStream');
+    const deleteStreamButton = document.getElementById('deleteStream');
+    const loadFileInput = document.getElementById('loadFile');
+    const savedStreamsSelect = document.getElementById('savedStreams');
+    const videoModal = document.getElementById('videoModal');
+    const closeModalButton = document.getElementById('closeModal');
+    const video = document.getElementById('videoPlayer');
+    const mpdUrlInput = document.getElementById('mpdUrl');
+    const clearKeysInput = document.getElementById('clearKeys');
+    const licenseUrlInput = document.getElementById('licenseUrl');
+    let player;
+    let savedStreams = {};
+
+    // Install Shaka Player polyfills
+    shaka.polyfill.installAll();
+
+    // Check if the browser supports DRM
+    if (!shaka.Player.isBrowserSupported()) {
+        console.error('Browser not supported!');
+        alert('Your browser does not support the required DRM features.');
+    }
+
+    // Load saved streams into dropdown
+    function updateSavedStreams() {
+        savedStreamsSelect.innerHTML = '<option value="">-- Select a Saved Stream --</option>';
+        Object.keys(savedStreams).forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            savedStreamsSelect.appendChild(option);
+        });
+    }
+
+    // Load file when user selects it
+    loadFileInput.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    savedStreams = JSON.parse(e.target.result || '{}');
+                    updateSavedStreams();
+                } catch (error) {
+                    alert('Error loading file: Invalid JSON format');
+                    savedStreams = {};
+                }
+            };
+            reader.readAsText(file);
+        }
+    });
+
+    // Populate inputs when a saved stream is selected
+    savedStreamsSelect.addEventListener('change', function() {
+        const selectedName = this.value;
+        if (selectedName && savedStreams[selectedName]) {
+            mpdUrlInput.value = savedStreams[selectedName].mpdUrl || '';
+            clearKeysInput.value = savedStreams[selectedName].clearKeys || '';
+            licenseUrlInput.value = savedStreams[selectedName].licenseUrl || '';
+        } else {
+            mpdUrlInput.value = '';
+            clearKeysInput.value = '';
+            licenseUrlInput.value = '';
+        }
+    });
+
+    // Play the stream
+    loadPlayerButton.addEventListener('click', async function() {
+        const mpdUrl = mpdUrlInput.value;
+        const clearKeysText = clearKeysInput.value;
+        const licenseUrl = licenseUrlInput.value;
+
+        if (!mpdUrl) {
+            alert('Please provide an MPD URL');
+            return;
+        }
+
+        const clearKeysArray = clearKeysText.split('\n').filter(line => line.trim() !== '');
+        const clearKeys = {};
+        clearKeysArray.forEach(pair => {
+            const [kid, key] = pair.split(':');
+            if (kid && key) clearKeys[kid.trim()] = key.trim();
+        });
+
+        videoModal.style.display = 'flex';
+        player = new shaka.Player(video);
+
+        // Add detailed error listener
+        player.addEventListener('error', function(event) {
+            const error = event.detail;
+            console.error('Shaka Player Error:', error);
+            console.error('Error details:', error.data);
+            alert(`Playback failed: ${error.code} - ${error.message}\nCheck console for more details.`);
+        });
+
+        const config = {
+            abr: { enabled: false },
+            drm: {},
+            manifest: {
+                retryParameters: {
+                    maxAttempts: 3,
+                    timeout: 30000
+                },
+                dash: {
+                    ignoreMinBufferTime: false,
+                    clockSyncUri: ''
+                }
+            },
+            streaming: {
+                retryParameters: {
+                    maxAttempts: 3,
+                    timeout: 30000
+                }
+            }
+        };
+
+        // Set base URI for relative segment URLs
+        const baseUri = mpdUrl.substring(0, mpdUrl.lastIndexOf('/') + 1);
+        console.log('Setting base URI:', baseUri);
+
+        // Configure DRM based on provided input
+        if (licenseUrl) {
+            config.drm.servers = {
+                'com.widevine.alpha': licenseUrl
+            };
+            config.drm.advanced = {
+                'com.widevine.alpha': {
+                    videoRobustness: 'SW_SECURE_CRYPTO',
+                    audioRobustness: 'SW_SECURE_CRYPTO'
+                }
+            };
+            console.log('Using Widevine with license URL:', licenseUrl);
+        } else if (Object.keys(clearKeys).length > 0) {
+            config.drm.clearKeys = clearKeys;
+            console.log('Using ClearKeys:', clearKeys);
+        } else {
+            alert('Please provide either ClearKeys or a Widevine License URL');
+            return;
+        }
+
+        // Apply configuration
+        player.configure(config);
+        console.log('Player configured with:', config);
+
+        try {
+            console.log('Loading MPD from:', mpdUrl);
+            await player.load(mpdUrl);
+            console.log('MPD loaded successfully');
+            const variants = player.getVariantTracks();
+            console.log('Available variants:', variants);
+            if (variants.length > 0) {
+                const highestQualityVariant = variants.reduce((prev, curr) =>
+                    (curr.height * curr.width > prev.height * prev.width) ? curr : prev
+                );
+                player.selectVariantTrack(highestQualityVariant, true);
+                console.log('Selected variant:', highestQualityVariant);
+            } else {
+                console.warn('No variants found in manifest');
+            }
+            video.play();
+            console.log('Playback started');
+        } catch (error) {
+            console.error('Error loading stream:', error);
+            if (error.code === shaka.util.Error.Code.HTTP_ERROR) {
+                console.error('HTTP error occurred. Check CORS or server response.');
+                console.error('Failed URI:', error.data && error.data[0]);
+            }
+            alert('Failed to load stream: ' + error.message);
+        }
+    });
+
+    // Save the stream and trigger download
+    saveStreamButton.addEventListener('click', function() {
+        const name = prompt('Enter a name for this stream:');
+        if (!name) return;
+
+        savedStreams[name] = {
+            mpdUrl: mpdUrlInput.value,
+            clearKeys: clearKeysInput.value,
+            licenseUrl: licenseUrlInput.value
+        };
+
+        const blob = new Blob([JSON.stringify(savedStreams, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.href = url;
+        downloadAnchor.download = 'streamurls.json';
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        document.body.removeChild(downloadAnchor);
+        URL.revokeObjectURL(url);
+
+        updateSavedStreams();
+    });
+
+    // Delete the selected stream
+    deleteStreamButton.addEventListener('click', function() {
+        const selectedName = savedStreamsSelect.value;
+        if (!selectedName) {
+            alert('Please select a stream to delete.');
+            return;
+        }
+        delete savedStreams[selectedName];
+        updateSavedStreams();
+        mpdUrlInput.value = '';
+        clearKeysInput.value = '';
+        licenseUrlInput.value = '';
+    });
+
+    // Modal controls
+    closeModalButton.addEventListener('click', closeVideoModal);
+    window.addEventListener('click', function(event) {
+        if (event.target === videoModal) closeVideoModal();
+    });
+
+    function closeVideoModal() {
+        videoModal.style.display = 'none';
+        if (player) {
+            player.destroy().then(() => {}).catch(error => console.error('Error destroying player:', error));
+        }
+        video.pause();
+        video.src = '';
+    }
+
+    // Initialize with empty streams
+    updateSavedStreams();
+</script>
+
+</body>
+</html>
