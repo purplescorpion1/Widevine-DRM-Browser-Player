@@ -216,7 +216,7 @@
         }
 
         console.log('Sending proxy config to server');
-        await fetch('https://192.168.1.123:5098/set_proxy_config', {
+        await fetch('https://192.168.1.25:5098/set_proxy_config', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ referer, origin })
@@ -235,7 +235,7 @@
         });
         console.log('Parsed ClearKeys:', clearKeys);
 
-        const proxyMpdUrl = `https://192.168.1.123:5098/proxy?url=${encodeURIComponent(mpdUrl)}`;
+        const proxyMpdUrl = `https://192.168.1.25:5098/proxy?url=${encodeURIComponent(mpdUrl)}`;
         console.log('Loading MPD from:', proxyMpdUrl);
 
         videoModal.style.display = 'flex';
@@ -254,14 +254,12 @@
                 priority: 1
             };
             console.log('Using Widevine with license URL:', licenseUrl);
-        }
-        if (Object.keys(clearKeys).length > 0) {
-            drmConfig['com.widevine.alpha'] = {
-                clearKeys: clearKeys
+        } else if (Object.keys(clearKeys).length > 0) {
+            drmConfig['org.w3.clearkey'] = {
+                clearkeys: clearKeys
             };
-            console.log('Using ClearKeys:', clearKeys);
-        }
-        if (Object.keys(drmConfig).length === 0) {
+            console.log('Using ClearKey with keys:', clearKeys);
+        } else {
             alert('Please provide either ClearKeys or a Widevine License URL');
             return;
         }
