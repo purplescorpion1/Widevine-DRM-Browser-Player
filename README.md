@@ -10,7 +10,7 @@ But if you want to host the html file and play in any web browser including Chro
 ## How To Load local drm_player.htm
 Open drm_player.html in your web browser <br>
 <br>
-Technically if you wanted to watch it on your tv you could if you had a web browser on the tv that supports widevine/clearkey although see the limitation above <br>
+Technically if you wanted to watch it on your tv you could if you had a web browser on the tv that supports widevine/clearkey although see the limitation above. It maybe better running the server version <br>
 <br>
 Enter mpd url <br>
 Enter license url or decryption key <br>
@@ -53,6 +53,11 @@ Now in your web browser go to changing the IP address to the IP address of the m
 https://192.168.1.123 <br>
 <br>
 Note you will get a warning about unsafe/unsigned site due to your self signed SSL. To avoid this you will need a SSL certificate from a recognised provider. Just tell your browser you want to proceed to the site <br>
+<br>
+Enter mpd url <br>
+Enter license url or decryption key <br>
+Enter the referer <br>
+Enter the origin <br>
 
 ## How To Play
 To play the stream press play once all stream details have been entered <br>
