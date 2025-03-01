@@ -1,6 +1,6 @@
 # Widevine-DRM-Browser-Player
 Play Widevine &amp; Clearkey DRM Streams In Your Web Browser <br>
-This is for educational purposes only - Do not play streams you do not have to right to play. You need to provide any decrypt keys or license URLS for this to work. This application does not extract/generate or provide any such keys
+This is for educational purposes only - Do not play streams you do not have to right to play. You need to provide any decrypt keys or license URLs for this to work. This application does not extract/generate or provide any such keys
 <br>
 ## Limitations
 1. You need to load the html file directly into your web browser. It will not work hosted on a server for example
