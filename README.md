@@ -30,5 +30,5 @@ Press Browse then select your streamurls.json <br>
 Select a saved stream from the drop down window <br>
 
 ## How To Delete A Stream
-You can temporarily remove a stream from the list by selected the delete stream button <br>
+You can temporarily remove a stream from the list by selecting the delete stream button <br>
 To permanently remove you need to delete it from the streamurls.json file <br>
