@@ -76,4 +76,4 @@ def proxy():
         return "Invalid MPD XML", 500
 
 if __name__ == '__main__':
-    app.run(host='192.168.1.25', port=5098, debug=True, ssl_context=('cert.pem', 'key.pem'))
+    app.run(host='192.168.1.123', port=5098, debug=True, ssl_context=('cert.pem', 'key.pem'))
