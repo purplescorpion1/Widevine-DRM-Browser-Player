@@ -26,7 +26,7 @@
             text-align: center;
         }
         h2 { color: #4caf50; margin-bottom: 20px; }
-        input[type="text"], textarea, select, input[type="file"] {
+        input[type="text"], textarea, select, input[type="file"], input[type="checkbox"] {
             width: 100%;
             padding: 12px;
             margin: 12px 0;
@@ -107,6 +107,9 @@
     <label for="origin">Origin:</label>
     <input type="text" id="origin" placeholder="https://example.com">
 
+    <label for="useProxy">Use Proxy:</label>
+    <input type="checkbox" id="useProxy" checked>
+
     <button id="loadPlayer">Play</button>
     <button id="saveStream">Save Stream</button>
     <button id="deleteStream">Delete Selected Stream</button>
@@ -119,7 +122,7 @@
     </div>
 </div>
 
-<script src="https://cdn.dashjs.org/latest/dash.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/shaka-player@4.3.5/dist/shaka-player.compiled.min.js"></script>
 <script>
     const loadPlayerButton = document.getElementById('loadPlayer');
     const saveStreamButton = document.getElementById('saveStream');
@@ -134,6 +137,7 @@
     const licenseUrlInput = document.getElementById('licenseUrl');
     const refererInput = document.getElementById('referer');
     const originInput = document.getElementById('origin');
+    const useProxyCheckbox = document.getElementById('useProxy');
     let player;
     let savedStreams = {};
 
@@ -206,8 +210,9 @@
         const licenseUrl = licenseUrlInput.value;
         const referer = refererInput.value;
         const origin = originInput.value;
+        const useProxy = useProxyCheckbox.checked;
 
-        console.log('Stream details:', { mpdUrl, clearKeysText, licenseUrl, referer, origin });
+        console.log('Stream details:', { mpdUrl, clearKeysText, licenseUrl, referer, origin, useProxy });
 
         if (!mpdUrl) {
             console.error('No MPD URL provided');
@@ -215,17 +220,35 @@
             return;
         }
 
-        console.log('Sending proxy config to server');
-        await fetch('https://192.168.1.123:5098/set_proxy_config', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ referer, origin })
-        }).then(response => {
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            return response.json();
-        }).then(data => {
-            console.log('Proxy config set:', data);
-        }).catch(error => console.error('Error setting proxy config:', error));
+        let finalMpdUrl = mpdUrl;
+        if (useProxy) {
+            console.log('Sending proxy config to server');
+            try {
+                const proxyConfigResponse = await fetch('https://192.168.1.25:5098/set_proxy_config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ referer, origin })
+                });
+                if (!proxyConfigResponse.ok) {
+                    throw new Error(`Proxy config failed with status: ${proxyConfigResponse.status} - ${proxyConfigResponse.statusText}`);
+                }
+                const proxyConfigData = await proxyConfigResponse.json();
+                console.log('Proxy config set:', proxyConfigData);
+            } catch (error) {
+                console.error('Error setting proxy config:', error);
+                alert('Failed to set proxy config: ' + error.message + '. Falling back to direct URL.');
+                finalMpdUrl = mpdUrl; // Fallback to direct URL if proxy config fails
+            }
+
+            if (finalMpdUrl === mpdUrl) {
+                console.log('Proxy config failed, using direct MPD URL');
+            } else {
+                finalMpdUrl = `https://192.168.1.25:5098/proxy?url=${encodeURIComponent(mpdUrl)}`;
+                console.log('Loading MPD from proxy:', finalMpdUrl);
+            }
+        } else {
+            console.log('Proxy bypassed, using direct MPD URL:', finalMpdUrl);
+        }
 
         const clearKeysArray = clearKeysText.split('\n').filter(line => line.trim() !== '');
         const clearKeys = {};
@@ -235,40 +258,46 @@
         });
         console.log('Parsed ClearKeys:', clearKeys);
 
-        const proxyMpdUrl = `https://192.168.1.123:5098/proxy?url=${encodeURIComponent(mpdUrl)}`;
-        console.log('Loading MPD from:', proxyMpdUrl);
-
         videoModal.style.display = 'flex';
-        player = dashjs.MediaPlayer().create();
-        player.initialize(video, null, false);
+        
+        shaka.polyfill.installAll();
+        
+        if (!shaka.Player.isBrowserSupported()) {
+            console.error('Browser not supported by Shaka Player');
+            alert('This browser is not supported by Shaka Player.');
+            return;
+        }
 
-        player.on(dashjs.MediaPlayer.events.ERROR, function(event) {
-            console.error('Dash.js Error:', event.error, event.event);
-            alert(`Playback failed: ${event.error} - ${event.event || 'Unknown error'}`);
+        player = new shaka.Player(video);
+        
+        player.addEventListener('error', function(event) {
+            console.error('Shaka Player Error:', event.detail);
+            alert(`Playback failed: ${event.detail.code} - ${event.detail.message}`);
         });
 
-        const drmConfig = {};
+        const drmConfig = {
+            drm: {
+                servers: {}
+            }
+        };
         if (licenseUrl) {
-            drmConfig['com.widevine.alpha'] = {
-                serverURL: licenseUrl,
-                priority: 1
-            };
+            drmConfig.drm.servers['com.widevine.alpha'] = licenseUrl;
             console.log('Using Widevine with license URL:', licenseUrl);
-        } else if (Object.keys(clearKeys).length > 0) {
-            drmConfig['org.w3.clearkey'] = {
-                clearkeys: clearKeys
-            };
+        }
+        if (Object.keys(clearKeys).length > 0) {
+            drmConfig.drm.clearKeys = clearKeys;
             console.log('Using ClearKey with keys:', clearKeys);
-        } else {
+        }
+        if (!licenseUrl && Object.keys(clearKeys).length === 0) {
             alert('Please provide either ClearKeys or a Widevine License URL');
             return;
         }
 
-        player.setProtectionData(drmConfig);
+        player.configure(drmConfig);
 
         try {
-            console.log('Initializing dash.js with MPD:', proxyMpdUrl);
-            player.attachSource(proxyMpdUrl);
+            console.log('Loading MPD with Shaka Player:', finalMpdUrl);
+            await player.load(finalMpdUrl);
             console.log('MPD loaded successfully');
             video.play();
             console.log('Playback started');
@@ -331,7 +360,8 @@
         console.log('Closing video modal');
         videoModal.style.display = 'none';
         if (player) {
-            player.reset();
+            player.destroy();
+            player = null;
         }
         video.pause();
         video.src = '';
