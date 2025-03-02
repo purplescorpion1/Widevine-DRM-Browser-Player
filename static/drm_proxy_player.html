@@ -224,7 +224,7 @@
         if (useProxy) {
             console.log('Sending proxy config to server');
             try {
-                const proxyConfigResponse = await fetch('https://192.168.1.25:5098/set_proxy_config', {
+                const proxyConfigResponse = await fetch('https://192.168.1.123:5098/set_proxy_config', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ referer, origin })
@@ -243,7 +243,7 @@
             if (finalMpdUrl === mpdUrl) {
                 console.log('Proxy config failed, using direct MPD URL');
             } else {
-                finalMpdUrl = `https://192.168.1.25:5098/proxy?url=${encodeURIComponent(mpdUrl)}`;
+                finalMpdUrl = `https://192.168.1.123:5098/proxy?url=${encodeURIComponent(mpdUrl)}`;
                 console.log('Loading MPD from proxy:', finalMpdUrl);
             }
         } else {
