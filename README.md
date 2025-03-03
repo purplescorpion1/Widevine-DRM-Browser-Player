@@ -51,7 +51,7 @@ python3 if on linux <br>
 <br>
 Run the following commands in separate cmd/terminal windows replacing the IP address in the mitmproxy command with the IP of the machine running the script <br>
 ```python drm_player_server.py``` <br>
-```mitmdump -s mitmproxy_script.py -p 8080 --listen-host 192.168.1.123``` <br>
+```mitmdump -s drm_player_mitmproxy.py -p 8080 --listen-host 192.168.1.123``` <br>
 <br>
 Now in your web browser go to changing the IP address to the IP address of the machine running the server. Important to enter the https:// at the start! <br>
 https://192.168.1.123 <br>
