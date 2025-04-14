@@ -54,7 +54,7 @@ Run the following commands in separate cmd/terminal windows replacing the IP add
 ```mitmdump -s drm_player_mitmproxy.py -p 8080 --listen-host 192.168.1.123``` <br>
 <br>
 Now in your web browser go to changing the IP address to the IP address of the machine running the server. Important to enter the https:// at the start! <br>
-https://192.168.1.123 <br>
+https://192.168.1.123:5098 <br>
 <br>
 Note you will get a warning about unsafe/unsigned site due to your self signed SSL. To avoid this you will need a SSL certificate from a recognised provider. Just tell your browser you want to proceed to the site <br>
 <br>
